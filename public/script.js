@@ -14,10 +14,8 @@ typingIndicator.style.display = 'none';
 function createMessageElement(sender) {
     const messageDiv = document.createElement('div');
     messageDiv.classList.add('message', `${sender}-message`);
-
     const p = document.createElement('p');
     messageDiv.appendChild(p);
-
     return messageDiv;
 }
 
@@ -25,27 +23,29 @@ function createMessageElement(sender) {
  * Types out a message character by character.
  * @param {string} text The message content.
  * @param {HTMLElement} messageElement The message element to type into.
+ * @returns {Promise<void>}
  */
 function typeMessage(text, messageElement) {
-    const p = messageElement.querySelector('p');
-    messageElement.classList.add('typing'); // Add typing class
-    let i = 0;
-    const speed = 10; // typing speed in milliseconds
+    return new Promise(resolve => {
+        const p = messageElement.querySelector('p');
+        messageElement.classList.add('typing');
+        let i = 0;
+        const speed = 10; // typing speed in milliseconds
 
-    function type() {
-        if (i < text.length) {
-            p.textContent += text.charAt(i);
-            i++;
-            chatBox.scrollTop = chatBox.scrollHeight;
-            setTimeout(type, speed);
-        } else {
-            messageElement.classList.remove('typing'); // Remove typing class when done
+        function type() {
+            if (i < text.length) {
+                p.textContent += text.charAt(i);
+                i++;
+                chatBox.scrollTop = chatBox.scrollHeight;
+                setTimeout(type, speed);
+            } else {
+                messageElement.classList.remove('typing');
+                resolve();
+            }
         }
-    }
-
-    type();
+        type();
+    });
 }
-
 
 chatForm.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -57,19 +57,15 @@ chatForm.addEventListener('submit', async (e) => {
     userMessageEl.querySelector('p').textContent = message;
     chatBox.insertBefore(userMessageEl, typingIndicator);
     chatBox.scrollTop = chatBox.scrollHeight;
-
     userInput.value = '';
 
-    // Show the typing indicator
     typingIndicator.style.display = 'block';
     chatBox.scrollTop = chatBox.scrollHeight;
 
     try {
         const response = await fetch('/chat', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ message }),
         });
 
@@ -78,18 +74,33 @@ chatForm.addEventListener('submit', async (e) => {
         }
 
         const data = await response.json();
-        const aiMessageEl = createMessageElement('ai');
-        chatBox.insertBefore(aiMessageEl, typingIndicator);
-        typeMessage(data.reply, aiMessageEl);
+        typingIndicator.style.display = 'none'; // Hide loader after fetch is complete
 
+        const markdownText = data.reply;
+
+        const finalMessageEl = createMessageElement('ai');
+        finalMessageEl.querySelector('p').innerHTML = marked.parse(markdownText);
+        finalMessageEl.style.display = 'none';
+        chatBox.insertBefore(finalMessageEl, typingIndicator);
+
+        const typewriterEl = createMessageElement('ai');
+        chatBox.insertBefore(typewriterEl, typingIndicator);
+
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = marked.parse(markdownText);
+        const plainText = tempDiv.textContent || "";
+
+        await typeMessage(plainText, typewriterEl);
+
+        chatBox.removeChild(typewriterEl);
+        finalMessageEl.style.display = 'block';
+        chatBox.scrollTop = chatBox.scrollHeight;
 
     } catch (error) {
+        typingIndicator.style.display = 'none'; // Also hide loader on error
         console.error('Error:', error);
         const errorMessageEl = createMessageElement('ai');
         chatBox.insertBefore(errorMessageEl, typingIndicator);
-        typeMessage('Sorry, something went wrong. Please try again.', errorMessageEl);
-    } finally {
-        // Always hide the typing indicator
-        typingIndicator.style.display = 'none';
+        await typeMessage('Sorry, something went wrong. Please try again.', errorMessageEl);
     }
 });
