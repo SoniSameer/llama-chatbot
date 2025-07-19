@@ -1,0 +1,22 @@
+{
+  "name": "fireworks-chat-ui",
+  "version": "1.0.0",
+  "description": "A web UI for chatting with an AI.",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [
+    "ai",
+    "chat",
+    "fireworks"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.19.2",
+    "openai": "^4.0.0"
+  }
+}
+
