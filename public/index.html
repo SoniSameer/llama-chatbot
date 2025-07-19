@@ -28,30 +28,29 @@
     
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
-        // Mobile keyboard handling - Close keyboard after sending message
-        document.addEventListener('DOMContentLoaded', function() {
-            const chatForm = document.getElementById('chat-form');
-            const userInput = document.getElementById('user-input');
+    document.addEventListener('DOMContentLoaded', function() {
+        const chatForm = document.getElementById('chat-form');
+        const userInput = document.getElementById('user-input');
+        
+        if (chatForm && userInput) {
+            chatForm.addEventListener('submit', function(e) {
+                // Small delay to ensure form processing happens first
+                setTimeout(() => {
+                    userInput.blur(); // Remove focus from input to close keyboard
+                }, 100);
+            });
             
-            if (chatForm && userInput) {
-                chatForm.addEventListener('submit', function(e) {
-                    // Small delay to ensure form processing happens first
+            // Also blur on button click for extra reliability
+            const submitButton = chatForm.querySelector('button[type="submit"]');
+            if (submitButton) {
+                submitButton.addEventListener('click', function() {
                     setTimeout(() => {
-                        userInput.blur(); // Remove focus from input to close keyboard
+                        userInput.blur();
                     }, 100);
                 });
-                
-                // Also blur on button click for extra reliability
-                const submitButton = chatForm.querySelector('button[type="submit"]');
-                if (submitButton) {
-                    submitButton.addEventListener('click', function() {
-                        setTimeout(() => {
-                            userInput.blur();
-                        }, 100);
-                    });
-                }
             }
-        });
+        }
+    });
     </script>
     <script src="script.js"></script>
 </body>
