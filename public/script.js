@@ -7,22 +7,45 @@ const typingIndicator = document.getElementById('typing-indicator');
 typingIndicator.style.display = 'none';
 
 /**
- * Appends a new message to the chat box before the typing indicator.
- * @param {string} text The message content.
+ * Creates a new message element.
  * @param {string} sender The sender ('user' or 'ai').
+ * @returns {HTMLElement} The message element.
  */
-function appendMessage(text, sender) {
+function createMessageElement(sender) {
     const messageDiv = document.createElement('div');
     messageDiv.classList.add('message', `${sender}-message`);
 
     const p = document.createElement('p');
-    p.textContent = text;
     messageDiv.appendChild(p);
 
-    // Insert the new message before the typing indicator
-    chatBox.insertBefore(messageDiv, typingIndicator);
-    chatBox.scrollTop = chatBox.scrollHeight;
+    return messageDiv;
 }
+
+/**
+ * Types out a message character by character.
+ * @param {string} text The message content.
+ * @param {HTMLElement} messageElement The message element to type into.
+ */
+function typeMessage(text, messageElement) {
+    const p = messageElement.querySelector('p');
+    messageElement.classList.add('typing'); // Add typing class
+    let i = 0;
+    const speed = 10; // typing speed in milliseconds
+
+    function type() {
+        if (i < text.length) {
+            p.textContent += text.charAt(i);
+            i++;
+            chatBox.scrollTop = chatBox.scrollHeight;
+            setTimeout(type, speed);
+        } else {
+            messageElement.classList.remove('typing'); // Remove typing class when done
+        }
+    }
+
+    type();
+}
+
 
 chatForm.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -30,7 +53,11 @@ chatForm.addEventListener('submit', async (e) => {
 
     if (!message) return;
 
-    appendMessage(message, 'user');
+    const userMessageEl = createMessageElement('user');
+    userMessageEl.querySelector('p').textContent = message;
+    chatBox.insertBefore(userMessageEl, typingIndicator);
+    chatBox.scrollTop = chatBox.scrollHeight;
+
     userInput.value = '';
 
     // Show the typing indicator
@@ -51,14 +78,18 @@ chatForm.addEventListener('submit', async (e) => {
         }
 
         const data = await response.json();
-        appendMessage(data.reply, 'ai');
+        const aiMessageEl = createMessageElement('ai');
+        chatBox.insertBefore(aiMessageEl, typingIndicator);
+        typeMessage(data.reply, aiMessageEl);
+
 
     } catch (error) {
         console.error('Error:', error);
-        appendMessage('Sorry, something went wrong. Please try again.', 'ai');
+        const errorMessageEl = createMessageElement('ai');
+        chatBox.insertBefore(errorMessageEl, typingIndicator);
+        typeMessage('Sorry, something went wrong. Please try again.', errorMessageEl);
     } finally {
         // Always hide the typing indicator
         typingIndicator.style.display = 'none';
-        chatBox.scrollTop = chatBox.scrollHeight;
     }
 });
