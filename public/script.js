@@ -3,30 +3,24 @@ const userInput = document.getElementById('user-input');
 const chatBox = document.getElementById('chat-box');
 const typingIndicator = document.getElementById('typing-indicator');
 
+// Hide the typing indicator by default
+typingIndicator.style.display = 'none';
+
 /**
- * Creates a new message element.
+ * Appends a new message to the chat box before the typing indicator.
  * @param {string} text The message content.
  * @param {string} sender The sender ('user' or 'ai').
- * @returns {HTMLElement} The message element.
  */
-function createMessageElement(text, sender) {
+function appendMessage(text, sender) {
     const messageDiv = document.createElement('div');
     messageDiv.classList.add('message', `${sender}-message`);
 
     const p = document.createElement('p');
     p.textContent = text;
     messageDiv.appendChild(p);
-    return messageDiv;
-}
 
-/**
- * Appends a new message to the chat box and scrolls to the bottom.
- * @param {string} text The message content.
- * @param {string} sender The sender ('user' or 'ai').
- */
-function appendMessage(text, sender) {
-    const messageEl = createMessageElement(text, sender);
-    chatBox.appendChild(messageEl);
+    // Insert the new message before the typing indicator
+    chatBox.insertBefore(messageDiv, typingIndicator);
     chatBox.scrollTop = chatBox.scrollHeight;
 }
 
@@ -39,26 +33,32 @@ chatForm.addEventListener('submit', async (e) => {
     appendMessage(message, 'user');
     userInput.value = '';
 
-    // Move the indicator to the end, so it appears after the user's message
-    chatBox.appendChild(typingIndicator);
-
-    // Show the typing indicator and scroll to it
-    typingIndicator.classList.remove('hidden');
+    // Show the typing indicator
+    typingIndicator.style.display = 'block';
     chatBox.scrollTop = chatBox.scrollHeight;
 
     try {
-        const response = await fetch('/chat', { method: 'POST', headers: { 'Content-Type': 'application/json', }, body: JSON.stringify({ message }), });
-        if (!response.ok) { throw new Error(`HTTP error! status: ${response.status}`); }
+        const response = await fetch('/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ message }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
         const data = await response.json();
-        const aiMessageEl = createMessageElement(data.reply, 'ai');
-        chatBox.insertBefore(aiMessageEl, typingIndicator);
+        appendMessage(data.reply, 'ai');
+
     } catch (error) {
         console.error('Error:', error);
-        const errorMessageEl = createMessageElement('Sorry, something went wrong. Please try again.', 'ai');
-        chatBox.insertBefore(errorMessageEl, typingIndicator);
+        appendMessage('Sorry, something went wrong. Please try again.', 'ai');
     } finally {
-        // Always hide the typing indicator and scroll down
-        typingIndicator.classList.add('hidden');
+        // Always hide the typing indicator
+        typingIndicator.style.display = 'none';
         chatBox.scrollTop = chatBox.scrollHeight;
     }
 });
